@@ -1,0 +1,27 @@
+version: '2'
+services:
+  java:
+    image: java:openjdk-8u77-jdk-alpine
+    command: java -jar /app/HelloTwitter-0.0.1-SNAPSHOT.jar
+    ports:
+      - "8000:8080"
+    volumes:
+      - ./build/libs:/app
+    environment:
+      - TWITTER_CONSUMER_KEY
+      - TWITTER_CONSUMER_SECRET
+      - TWITTER_ACCESS_TOKEN
+      - TWITTER_ACCESS_TOKEN_SECRET
+    links:
+      - redis
+      - postgres
+    depends_on:
+      - redis
+      - postgres
+  redis:
+    image: redis
+  postgres:
+    image: postgres
+    volumes:
+      - ./scripts:/docker-entrypoint-initdb.d
+
