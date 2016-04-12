@@ -20,6 +20,9 @@ services:
       - postgres
   redis:
     image: redis
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./conf/redis.conf:/usr/local/etc/redis/redis.conf
   postgres:
     image: postgres
     volumes:

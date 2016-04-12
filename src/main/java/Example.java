@@ -77,10 +77,10 @@ public class Example {
                             if (i > 0) {
                                 sbStatusIds.append(",");
                             }
-                            sbStatusIds.append(rs.getLong(0));
+                            sbStatusIds.append(rs.getLong(1));
 
                             // get raw json
-                            getRedisTemplate().opsForValue().set(rs.getString(0), rs.getString(2));
+                            getRedisTemplate().opsForValue().set(rs.getString(1), rs.getString(3));
                         }
                         getRedisTemplate().opsForValue().set(screenName.toLowerCase(), sbStatusIds.toString());
                         return null;
