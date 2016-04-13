@@ -1,0 +1,36 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Hello Twitter</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+
+<h2>Fetch Twitter User</h2>
+
+<form method="get" action="/">
+    <input type="text" name="screen_name" />
+    <input type="submit" value="Submit" />
+</form>
+
+<h2>Stored Twitter Users</h2>
+
+<form name="store_users_form" method="get" action="/">
+    <select name="screen_name" onchange="document.store_users_form.submit(); return true;">
+        <div th:each="name : ${names}">
+            <option th:value="${name}" th:selected="${name eq screen_name} ">
+                @<span th:text="${name}" />
+            </option>
+        </div>
+    </select>
+</form>
+
+<h2>@<span th:text="${screen_name} + '\'s tweets:'" /></h2>
+
+<div th:each="status : ${statuses}">
+    <h4 th:text="${status.createdAt}" />
+    <span th:text="${status.text}" />
+</div>
+
+</body>
+</html>

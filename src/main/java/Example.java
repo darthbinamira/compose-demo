@@ -8,6 +8,8 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,8 +24,10 @@ import twitter4j.conf.ConfigurationBuilder;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
-@RestController
+@Controller
 @EnableAutoConfiguration
 public class Example {
 
@@ -51,10 +55,11 @@ public class Example {
     }
 
     @RequestMapping("/")
-    String home(@RequestParam(name = "screen_name", defaultValue = "screenName") String screenName) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<h3>").append(screenName).append("</h3>").append(fetchTwitterFeed(screenName));
-        return sb.toString();
+    public String index(@RequestParam(name = "screen_name", defaultValue = "twitter") String screenName, Model model) {
+        model.addAttribute("statuses", fetchTwitterFeed(screenName));
+        model.addAttribute("names", fetchTwitterScreenNames());
+        model.addAttribute("screen_name", screenName);
+        return "index";
     }
 
 
@@ -62,8 +67,25 @@ public class Example {
         SpringApplication.run(Example.class, args);
     }
 
-    private String fetchTwitterFeed(final String screenName) {
-        if (! getRedisTemplate().hasKey(screenName.toLowerCase())) {
+    private List<String> fetchTwitterScreenNames() {
+        final List<String> screenNames = new ArrayList<String>();
+
+        getJdbcTemplate().query("select screen_name from users", new ResultSetExtractor<String>() {
+            @Override
+            public String extractData(ResultSet rs) throws SQLException, DataAccessException {
+                // too lazy, let's do it here instead
+                while (rs.next()) {
+                    screenNames.add(rs.getString(1));
+                }
+                return null;
+            }
+        });
+
+        return screenNames;
+    }
+
+    private List<Status> fetchTwitterFeed(final String screenName) {
+        if (!getRedisTemplate().hasKey(screenName.toLowerCase())) {
             Integer countUser = getJdbcTemplate().queryForObject("select count(*) from users where screen_name = ?", Integer.class, screenName.toLowerCase());
             if (countUser > 0) {
                 System.out.println("Fetching from DB.");
@@ -120,23 +142,15 @@ public class Example {
 
         }
 
-        StringBuilder sb = new StringBuilder();
+        List<Status> statuses = new ArrayList<Status>();
+
         String statusIds = getRedisTemplate().opsForValue().get(screenName.toLowerCase());
         String[] statusIdsArray = statusIds.split(",");
-        User user = null;
         for (String statusId : statusIdsArray) {
             try {
                 String rawJSON = getRedisTemplate().opsForValue().get(statusId);
                 Status status = TwitterObjectFactory.createStatus(rawJSON);
-                String date = status.getCreatedAt().toString();
-                String statusText = status.getText();
-
-                if (user == null) {
-                    user = status.getUser();
-                }
-
-                // form return string
-                sb.append("<h4>").append(date).append("</h4>").append(statusText);
+                statuses.add(status);
             } catch (TwitterException e) {
                 e.printStackTrace();
             } catch (Exception e) {
@@ -144,10 +158,7 @@ public class Example {
             }
         }
 
-        StringBuilder sbUser = new StringBuilder();
-        sbUser.append("<h3>").append(user.getName()).append("</h3>").append(sb.toString());
-
-        return sbUser.toString();
+        return statuses;
     }
 
     public JdbcTemplate getJdbcTemplate() {
